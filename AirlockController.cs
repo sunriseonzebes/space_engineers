@@ -65,28 +65,17 @@ public class AirlockSystem {
     public IMyDoor airSideDoor = null;
     public IMyDoor spaceSideDoor = null;
     public IMyAirVent airVent = null;
-    public IMyButtonPanel button = null;
     public AirlockState desiredState;
 
-    public bool AssignMembersFromButton(IMyButtonPanel newButton, ShipSystems shipSystems) {
-        this.button = newButton;
+    public bool AssignMembersFromAirVent(IMyAirVent newVent, ShipSystems shipSystems) {
+        this.airVent = newVent;
 
-        string desiredStateString = GetKeyValue(newButton.CustomData, "AirlockController.DesiredState");
+        string desiredStateString = GetKeyValue(newVent.CustomData, "AirlockController.DesiredState");
         if (desiredStateString == null)
-            return false;
+            return false;  // State string wasn't found.
         this.desiredState = getStateFromString(desiredStateString);
 
-        string airVentName = GetKeyValue(newButton.CustomData, "AirlockController.AirVentName");
-        if (airVentName == null)
-            return false;
-        for (int i = 0; i < shipSystems.airVents.Count; ++i) {
-            if (shipSystems.airVents[i].CustomName == airVentName)
-                this.airVent = shipSystems.airVents[i];
-        }
-        if (this.airVent == null)
-            return false;  // Specified air vent wasn't found.
-
-        string airSideDoorName = GetKeyValue(newButton.CustomData, "AirlockController.AirSideDoorName");
+        string airSideDoorName = GetKeyValue(newVent.CustomData, "AirlockController.AirSideDoorName");
         if (airSideDoorName == null)
             return false;
         for (int i = 0; i < shipSystems.doors.Count; ++i) {
@@ -96,7 +85,7 @@ public class AirlockSystem {
         if (this.airSideDoor == null)
             return false;  // Specified door wasn't found.
 
-        string spaceSideDoorName = GetKeyValue(newButton.CustomData, "AirlockController.SpaceSideDoorName");
+        string spaceSideDoorName = GetKeyValue(newVent.CustomData, "AirlockController.SpaceSideDoorName");
         if (spaceSideDoorName == null)
             return false;
         for (int i = 0; i < shipSystems.doors.Count; ++i) {
@@ -200,42 +189,42 @@ public class AirlockSystem {
 
 public List<AirlockSystem> GetAirlockSystems(ShipSystems shipSystems) {
     List<AirlockSystem> airlockSystems = new List<AirlockSystem>();
-    for (int i = 0; i < shipSystems.buttons.Count; ++i) {
+    for (int i = 0; i < shipSystems.airVents.Count; ++i) {
 
         AirlockSystem newAirlockSystem = new AirlockSystem();
-        if (newAirlockSystem.AssignMembersFromButton(shipSystems.buttons[i], shipSystems))
+        if (newAirlockSystem.AssignMembersFromAirVent(shipSystems.airVents[i], shipSystems))
             airlockSystems.Add(newAirlockSystem);
     }
 
     return airlockSystems;
 }
 
-public void ToggleAirlockDesiredState(string buttonName, ShipSystems shipSystems) {
-	IMyButtonPanel button = null;
-	foreach (IMyButtonPanel currentButton in shipSystems.buttons) {
-		if (currentButton.CustomName == buttonName) {
-			button = currentButton;
+public void ToggleAirlockDesiredState(string airVentName, ShipSystems shipSystems) {
+	IMyAirVent airVent = null;
+	foreach (IMyAirVent currentVent in shipSystems.airVents) {
+		if (currentVent.CustomName == airVentName) {
+			airVent = currentVent;
 			break;
 		}
 	}
 	
-	if (button == null)
+	if (airVent == null)
 		return;
 	
-	string[] oldButtonData = button.CustomData.Split("\n\r".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
-	string[] newButtonData = new string[oldButtonData.Length];
-	for (int i = 0; i < oldButtonData.Length; ++i) {
-		if (oldButtonData[i].Contains("AirlockController.DesiredState")) {
-			if (oldButtonData[i].Contains("OpenToSpace"))
-				newButtonData[i] = oldButtonData[i].Replace("OpenToSpace", "OpenToAir");
-			else if (oldButtonData[i].Contains("OpenToAir"))
-				newButtonData[i] = oldButtonData[i].Replace("OpenToAir", "OpenToSpace");
+	string[] oldVentData = airVent.CustomData.Split("\n\r".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
+	string[] newVentData = new string[oldVentData.Length];
+	for (int i = 0; i < oldVentData.Length; ++i) {
+		if (oldVentData[i].Contains("AirlockController.DesiredState")) {
+			if (oldVentData[i].Contains("OpenToSpace"))
+				newVentData[i] = oldVentData[i].Replace("OpenToSpace", "OpenToAir");
+			else if (oldVentData[i].Contains("OpenToAir"))
+				newVentData[i] = oldVentData[i].Replace("OpenToAir", "OpenToSpace");
 		}
 		else
-			newButtonData[i] = oldButtonData[i];
+			newVentData[i] = oldVentData[i];
 	}
 	
-	button.CustomData = String.Join("\n", newButtonData);
+	airVent.CustomData = String.Join("\n", newVentData);
 }
 
 public void Main(string argument, UpdateType updateSource)
